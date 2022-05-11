@@ -706,7 +706,7 @@ void do_loop()
 		// ===== Check program switch status =====
 		byte pswitch = os.detect_programswitch_status(curr_time);
 		if(pswitch > 0) {
-			reset_all_stations_immediate(); // immediately stop all stations
+//			reset_all_stations_immediate(); // immediately stop all stations
 		}
 		if (pswitch & 0x01) {
 			if(pd.nprograms > 0)	manual_start_program(1, 0);
@@ -1282,7 +1282,7 @@ void reset_all_stations() {
  */
 void manual_start_program(byte pid, byte uwt) {
 	boolean match_found = false;
-	reset_all_stations_immediate();
+//	reset_all_stations_immediate();
 	ProgramStruct prog;
 	ulong dur;
 	byte sid, bid, s;
