@@ -427,7 +427,7 @@ void do_loop()
 	if (m_server) {	// if wired Ethernet
 		led_blink_ms = 0;
 
-		#if defined(ENABLE_DEBUG)
+		#if defined(ENABLE_ENC28J60_DEBUG)
 			// this section prints out ENC28J60 register values onto LCD
 			#define PHY_TIMEOUT 10
 			static ulong phy_timeout = 0;
@@ -706,7 +706,7 @@ void do_loop()
 		// ===== Check program switch status =====
 		byte pswitch = os.detect_programswitch_status(curr_time);
 		if(pswitch > 0) {
-			reset_all_stations_immediate(); // immediately stop all stations
+//			reset_all_stations_immediate(); // immediately stop all stations
 		}
 		if (pswitch & 0x01) {
 			if(pd.nprograms > 0)	manual_start_program(1, 0);
@@ -1282,7 +1282,7 @@ void reset_all_stations() {
  */
 void manual_start_program(byte pid, byte uwt) {
 	boolean match_found = false;
-	reset_all_stations_immediate();
+//	reset_all_stations_immediate();
 	ProgramStruct prog;
 	ulong dur;
 	byte sid, bid, s;
