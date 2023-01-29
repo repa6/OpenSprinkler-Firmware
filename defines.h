@@ -36,7 +36,7 @@ typedef unsigned long ulong;
 														// if this number is different from the one stored in non-volatile memory
 														// a device reset will be automatically triggered
 
-#define OS_FW_MINOR      1  // Firmware minor version
+#define OS_FW_MINOR      11  // Firmware minor version
 
 /** Hardware version base numbers */
 #define OS_HW_VERSION_BASE   0x00 // OpenSprinkler
@@ -139,7 +139,7 @@ typedef unsigned long ulong;
 
 /** Default string option values */
 #define DEFAULT_PASSWORD          "a6d82bced638de3def1e9bbb4983225c"  // md5 of 'opendoor'
-#define DEFAULT_LOCATION          "42.36,-71.06"  // Boston,MA
+#define DEFAULT_LOCATION          "38.37,90.11"  // St. Louis Missouri
 #define DEFAULT_JAVASCRIPT_URL    "https://ui.opensprinkler.com/js"
 #define DEFAULT_WEATHER_URL       "weather.opensprinkler.com"
 #define DEFAULT_IFTTT_URL         "maker.ifttt.com"

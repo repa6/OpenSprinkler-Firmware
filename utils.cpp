@@ -408,16 +408,20 @@ ulong water_time_resolve(uint16_t v) {
 // encode a 16-bit signed water time (-600 to 600)
 // to unsigned byte (0 to 240)
 byte water_time_encode_signed(int16_t i) {
-	i=(i>600)?600:i;
-	i=(i<-600)?-600:i;
-	return (i+600)/5;
+	// i=(i>600)?600:i;
+	// i=(i<-600)?-600:i;
+	// return (i+600)/5;
+	i=(i>120)?120:i;
+	i=(i<-120)?-120:i;
+	return (i+120);
 }
 
 // decode a 8-bit unsigned byte (0 to 240)
 // to a 16-bit signed water time (-600 to 600)
 int16_t water_time_decode_signed(byte i) {
 	i=(i>240)?240:i;
-	return ((int16_t)i-120)*5;
+	// return ((int16_t)i-120)*5;
+	return ((int16_t)i-120);
 }
 
 
