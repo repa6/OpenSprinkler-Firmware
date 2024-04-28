@@ -36,7 +36,8 @@
 		DNSServer *dns = NULL;
 		ENC28J60lwIP eth(PIN_ETHER_CS); // ENC28J60 lwip for wired Ether
 		bool useEth = false; // tracks whether we are using WiFi or wired Ether connection
-		static uint16_t led_blink_ms = LED_FAST_BLINK;
+		static uint16_t led_blink_ms = LED_FAST_BLINK;		
+		byte onboardled = 2;		// 2 for onboard led
 	#else
 		EthernetServer *m_server = NULL;
 		EthernetClient *m_client = NULL;
@@ -102,7 +103,7 @@ void flow_poll() {
 
 	/* RAH implementation of flow sensor */
 	if (flow_start==0) { flow_gallons=0; flow_start=curr;} // if first pulse, record time
-	if ((curr-flow_start)<90000) { flow_gallons=0; } // wait 90 seconds before recording flow_begin
+	if ((curr-flow_start)<10000) { flow_gallons=0; } // wait 90 seconds (original value=90000 ms) before recording flow_begin
 	else {	if (flow_gallons==1)	{  flow_begin = curr;}}
 	flow_stop = curr; // get time in ms for stop
 	flow_gallons++;  // increment gallon count for each poll
@@ -148,7 +149,8 @@ void ui_state_machine() {
 	static ulong led_toggle_timeout = 0;
 	if(led_blink_ms) {
 		if(millis()>led_toggle_timeout) {
-			os.toggle_screen_led();
+			os.toggle_screen_led();		
+			digitalWrite(onboardled, !digitalRead(onboardled));
 			led_toggle_timeout = millis() + led_blink_ms;
 		}
 	}
@@ -297,6 +299,7 @@ void do_setup() {
 #if defined(ESP8266)
 	WiFi.persistent(false);
 	led_blink_ms = LED_FAST_BLINK;
+	pinMode(onboardled, OUTPUT);
 #else
 	MCUSR &= ~(1<<WDRF);
 #endif
@@ -536,6 +539,7 @@ void do_loop()
 			if(useEth || WiFi.status() == WL_CONNECTED) {
 				update_server->handleClient();
 				otf->loop();
+				led_blink_ms = LED_SECONDS_BLINK;
 				connecting_timeout = 0;
 			} else {
 				// todo: better handling of WiFi disconnection
@@ -1140,6 +1144,7 @@ void turn_off_station(byte sid, ulong curr_time, byte shift) {
 			// log station run
 			write_log(LOGDATA_STATION, curr_time); // LOG_TODO
 			push_message(NOTIFY_STATION_OFF, sid, pd.lastrun.duration);
+			push_message(NOTIFY_FLOW_ALERT, sid, pd.lastrun.duration);
 		}
 	}
 
@@ -1372,8 +1377,13 @@ void push_message(int type, uint32_t lval, float fval, const char* sval) {
 	static char payload[TMP_BUFFER_SIZE];
 	char* postval = tmp_buffer;
 	uint32_t volume;
+	float flow_pulse_rate_factor;	
 
 	bool ifttt_enabled = os.iopts[IOPT_IFTTT_ENABLE]&type;
+
+	//todo: Remove this after UI is modified for new push_message type "NOTIFY_FLOW_ALERT"
+	//Until the UI is modified for the new push_message type, force the IFTTT_enabled flag true if a flow sensor is enabled and the IFTTT key is not empty
+	if(os.iopts[IOPT_SENSOR1_TYPE]==SENSOR_TYPE_FLOW  && os.sopt_load(SOPT_IFTTT_KEY).length()>0 && type==NOTIFY_FLOW_ALERT) {ifttt_enabled=true;}
 
 	// check if this type of event is enabled for push notification
 	if (!ifttt_enabled && !os.mqtt.enabled())
@@ -1420,6 +1430,77 @@ void push_message(int type, uint32_t lval, float fval, const char* sval) {
 
 				if(os.iopts[IOPT_SENSOR1_TYPE]==SENSOR_TYPE_FLOW) {
 					sprintf_P(postval+strlen(postval), PSTR(" Flow rate: %d.%02d"), (int)flow_last_gpm, (int)(flow_last_gpm*100)%100);
+				}
+			}
+			break;
+
+		case NOTIFY_FLOW_ALERT:
+
+			bool flow_gpm_alert_setpoint_valid;
+			if (ifttt_enabled || os.mqtt.enabled()) {
+				//Added new variable for flow_gpm_alert_setpoint and set default value to max
+				float flow_gpm_alert_setpoint = 999.9f;
+
+				strcat_P(postval, PSTR("<br>Station: "));
+				os.get_station_name(lval, postval+strlen(postval));
+
+				//Extract flow_gpm_alert_setpoint from last 5 characters of station name
+				const char *station_name_last_five_chars = postval;
+				if (strlen(postval) > 5) {
+					station_name_last_five_chars = postval + strlen(postval) - 5;
+				}
+
+				//Convert last five characters to number and check if valid
+				if (sscanf(station_name_last_five_chars, "%f", &flow_gpm_alert_setpoint) != 1) {
+					//Not a valid number, disable ifttt. If a number is not detected in the station name, it will never send an alert
+					flow_gpm_alert_setpoint_valid = false;
+				} else {
+					//String was successfully converted to a number so truncate it off postval to clean up the station name in message
+					if (os.mqtt.enabled()) {
+							sprintf_P(topic, PSTR("opensprinkler/station/%d/flow"), lval);
+							sprintf_P(payload, PSTR("{\"Flow alert setpoint:\":%.2f}"), flow_gpm_alert_setpoint);
+							os.mqtt.publish(topic, payload);
+						}
+
+					postval[(strlen(postval) - 5)] = '\0';
+
+					//flow_last_gpm is atually collected and stored as pulses per minute
+					//Get Flow Pulse Rate factor and apply to flow_last_gpm when comparing and outputting
+					flow_pulse_rate_factor = static_cast<float>(os.iopts[IOPT_PULSE_RATE_1]) + static_cast<float>(os.iopts[IOPT_PULSE_RATE_0]) / 100.0;
+
+					//Format message
+					strcat_P(postval, PSTR("<br>Duration: "));
+					sprintf_P(postval+strlen(postval), PSTR(" %d minutes %d seconds"), (int)fval/60, (int)fval%60);
+
+					strcat_P(postval, PSTR("<br><br>FLOW ALERT!"));
+					sprintf_P(postval + strlen(postval), PSTR("<br>Flow rate: %d.%02d<br>Flow Alert Setpoint: %d.%02d"), 
+					(int)(flow_last_gpm*flow_pulse_rate_factor), (int)((flow_last_gpm*flow_pulse_rate_factor) * 100) % 100, 
+					(int)(flow_gpm_alert_setpoint), (int)((flow_gpm_alert_setpoint) * 100) % 100);
+
+					// Compare flow_gpm_alert_setpoint with flow_last_gpm and disable system if flow deviation is too far from setpoint				
+					if (abs((flow_last_gpm*flow_pulse_rate_factor)-flow_gpm_alert_setpoint)>0.1) {
+						strcat_P(postval, PSTR("<br><br>FLOW ALERT!"));
+						sprintf_P(postval + strlen(postval), PSTR("<br>Flow rate OUT OF BOUNDARIES!"));
+
+						if (os.mqtt.enabled()) {
+							sprintf_P(topic, PSTR("opensprinkler/station/%d/flowalert"), lval);
+							sprintf_P(payload, PSTR("{\"flow alert setpoint\":%d.%02d, \"flow rate\":%d.%02d, \"Flow deviation\":%d.%02d}"),  
+								(int)(flow_gpm_alert_setpoint),
+								(int)((flow_gpm_alert_setpoint)*100)%100,
+								(int)(flow_last_gpm*flow_pulse_rate_factor),
+								(int)((flow_last_gpm*flow_pulse_rate_factor)*100)%100,
+								(int)(abs((flow_last_gpm*flow_pulse_rate_factor)-flow_gpm_alert_setpoint)),
+								(int)(abs((flow_last_gpm*flow_pulse_rate_factor)-flow_gpm_alert_setpoint)*100)%100
+							);
+							os.mqtt.publish(topic, payload);
+						}
+					} else {
+						if (os.mqtt.enabled()) {
+							sprintf_P(topic, PSTR("opensprinkler/station/%d/flow"), lval);
+							sprintf_P(payload, PSTR("{\"Flow alert setpoint:\":%.2f, \"Flow rate:\":%.2f}"), flow_gpm_alert_setpoint, (float)(flow_last_gpm*flow_pulse_rate_factor));
+							os.mqtt.publish(topic, payload);
+						}
+					}
 				}
 			}
 			break;
