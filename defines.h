@@ -76,6 +76,7 @@ typedef unsigned long ulong;
 #define NOTIFY_SENSOR2         0x0040
 #define NOTIFY_RAINDELAY       0x0080
 #define NOTIFY_STATION_ON      0x0100
+#define NOTIFY_FLOW_ALERT      0x0200
 
 /** HTTP request macro defines */
 #define HTTP_RQT_SUCCESS       0
@@ -92,7 +93,7 @@ typedef unsigned long ulong;
 #define SENSOR_TYPE_PSWITCH 0xF0  // program switch sensor
 #define SENSOR_TYPE_OTHER   0xFF
 
-#define FLOWCOUNT_RT_WINDOW   30  // flow count window (for computing real-time flow rate), 30 seconds
+#define FLOWCOUNT_RT_WINDOW   20  // flow count window (for computing real-time flow rate), 30 seconds
 
 /** Reboot cause */
 #define REBOOT_CAUSE_NONE   0
@@ -122,6 +123,7 @@ typedef unsigned long ulong;
 
 #define LED_FAST_BLINK 100
 #define LED_SLOW_BLINK 500
+#define LED_SECONDS_BLINK 900
 
 /** Storage / zone expander defines */
 #if defined(ARDUINO)
