@@ -43,7 +43,8 @@
 		ENC28J60lwIP enc28j60(PIN_ETHER_CS); // ENC28J60 lwip for wired Ether
 		Wiznet5500lwIP w5500(PIN_ETHER_CS); // W5500 lwip for wired Ether
 		lwipEth eth;
-		bool useEth = false; // tracks whether we are using WiFi or wired Ether connection
+		bool useEth = false; // tracks whether we are using WiFi or wired Ether connection		
+		byte onboardled = 2;		// 2 for onboard led
 	#else
 		EthernetServer *m_server = NULL;
 		EthernetClient *m_client = NULL;
@@ -146,7 +147,7 @@ void flow_poll() {
 		flow_start = curr;
 	} // if first pulse, record time
 
-	if ((curr-flow_start)<90000) {
+	if ((curr-flow_start)<10000) { // wait 90 seconds (default 90000 ms) before recording
 		flow_gallons=0;
 	} // wait 90 seconds before recording flow_begin
 	else {
@@ -220,6 +221,7 @@ void ui_state_machine() {
 		ulong tm = millis();
 		if(tm - led_toggle_prev > led_blink_ms) { // overflow proof timeout
 			os.toggle_screen_led();
+			digitalWrite(onboardled, !digitalRead(onboardled));
 			led_toggle_prev = tm;
 		}
 	}
@@ -421,6 +423,7 @@ void do_setup() {
 #if defined(ESP8266)
 	WiFi.persistent(false);
 	led_blink_ms = LED_FAST_BLINK;
+	led_blink_ms = LED_SECONDS_BLINK;
 #else
 	MCUSR &= ~(1<<WDRF);
 #endif
@@ -849,7 +852,7 @@ void do_loop()
 		// ===== Check program switch status =====
 		unsigned char pswitch = os.detect_programswitch_status(curr_time);
 		if(pswitch > 0) {
-			reset_all_stations_immediate(); // immediately stop all stations
+//			reset_all_stations_immediate(); // immediately stop all stations
 		}
 		if (pswitch & 0x01) {
 			if(pd.nprograms > 0)	manual_start_program(1, 0);
@@ -1615,7 +1618,7 @@ void reset_all_stations(bool running_ones_only) {
  */
 void manual_start_program(unsigned char pid, unsigned char uwt) {
 	boolean match_found = false;
-	reset_all_stations_immediate();
+//	reset_all_stations_immediate();
 	ProgramStruct prog;
 	ulong dur;
 	unsigned char sid, bid, s;

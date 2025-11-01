@@ -2735,6 +2735,25 @@ void OpenSprinkler::lcd_print_screen(char c) {
 	lcd.setCursor(LCD_CURSOR_RAINDELAY, 1);
 	lcd.write((status.rain_delayed || status.pause_state)?ICON_RAINDELAY:' ');
 
+		byte raindelaypin = 1;		// 2 for onboard led
+			pinMode(raindelaypin, OUTPUT);
+					digitalWrite(raindelaypin, 1);
+				if (status.rain_delayed || status.pause_state) {
+					digitalWrite(raindelaypin, 0);
+				}
+				else {					
+					digitalWrite(raindelaypin, 1);
+				}
+		byte raindelaypin2 = 2;		// 2 for onboard led
+			pinMode(raindelaypin2, OUTPUT);
+					digitalWrite(raindelaypin2, 1);
+				if (status.rain_delayed || status.pause_state) {
+					digitalWrite(raindelaypin2, 0);
+				}
+				else {					
+						digitalWrite(raindelaypin2, 1);
+				}
+
 	// write sensor 1 icon
 	lcd.setCursor(LCD_CURSOR_SENSOR1, 1);
 	switch(iopts[IOPT_SENSOR1_TYPE]) {

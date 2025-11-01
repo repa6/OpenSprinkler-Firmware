@@ -35,7 +35,7 @@ typedef unsigned long ulong;
 														// if this number is different from the one stored in non-volatile memory
 														// a device reset will be automatically triggered
 
-#define OS_FW_MINOR      3  // Firmware minor version
+#define OS_FW_MINOR      103  // Firmware minor version
 
 /** Hardware version base numbers */
 #define OS_HW_VERSION_BASE   0x00 // OpenSprinkler
@@ -100,7 +100,7 @@ enum {
 #define SENSOR_TYPE_PSWITCH 0xF0  // program switch sensor
 #define SENSOR_TYPE_OTHER   0xFF
 
-#define FLOWCOUNT_RT_WINDOW   1000  // flow count divisor (for computing real-time flow rate)
+#define FLOWCOUNT_RT_WINDOW   1000  // flow count divisor (for computing real-time flow rate) default: 1000 (ms?)
 
 /** Reboot cause */
 #define REBOOT_CAUSE_NONE   0
@@ -130,6 +130,7 @@ enum {
 
 #define LED_FAST_BLINK 100
 #define LED_SLOW_BLINK 500
+#define LED_SECONDS_BLINK 900
 
 /** Storage / zone expander defines */
 #if defined(ARDUINO)
@@ -147,7 +148,7 @@ enum {
 
 /** Default string option values */
 #define DEFAULT_PASSWORD          "a6d82bced638de3def1e9bbb4983225c"  // md5 of 'opendoor'
-#define DEFAULT_LOCATION          "42.36,-71.06"  // Boston,MA
+#define DEFAULT_LOCATION          "38.37,90.11" // St. Louis Missouri, USA
 #define DEFAULT_JAVASCRIPT_URL    "https://ui.opensprinkler.com/js"
 #define DEFAULT_WEATHER_URL       "weather.opensprinkler.com"
 #define DEFAULT_IFTTT_URL         "maker.ifttt.com"
