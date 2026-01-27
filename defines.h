@@ -31,7 +31,7 @@ typedef unsigned long ulong;
 #define TMP_BUFFER_SIZE      320   // scratch buffer size
 
 /** Firmware version, hardware version, and maximal values */
-#define OS_FW_VERSION  721  // Firmware version: 721 means 7.2.1
+#define OS_FW_VERSION  241  // Firmware version: 241 means 2.4.1
 														// if this number is different from the one stored in non-volatile memory
 														// a device reset will be automatically triggered
 
