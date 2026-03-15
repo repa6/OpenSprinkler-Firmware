@@ -1419,6 +1419,15 @@ void process_dynamic_events(time_os_t curr_time) {
 		 && os.status.sensor2_active)
 		sn2 = true;
 
+	// pre-compute real-time flow GPM if flow sensor is active and producing data
+	float rt_gpm = 0.0f;
+	if(os.iopts[IOPT_SENSOR1_TYPE] == SENSOR_TYPE_FLOW && os.flowcount_rt > 0) {
+		uint32_t flowrate100 = (((uint32_t)os.iopts[IOPT_PULSE_RATE_1])<<8) + os.iopts[IOPT_PULSE_RATE_0];
+		// flowcount_rt = FLOWCOUNT_RT_WINDOW * 1000 / flow_rt_period_ms
+		// pulses/min   = 60000 / flow_rt_period_ms = 60 * flowcount_rt / FLOWCOUNT_RT_WINDOW
+		rt_gpm = 60.0f * os.flowcount_rt / FLOWCOUNT_RT_WINDOW * flowrate100 / 100.0f;
+	}
+
 	unsigned char sid, s, bid, qid, igs, igs2, igrd;
 	for(bid=0;bid<os.nboards;bid++) {
 		igs = os.attrib_igs[bid];
@@ -1439,7 +1448,32 @@ void process_dynamic_events(time_os_t curr_time) {
 			if(qid==255) continue;
 			RuntimeQueueStruct *q = pd.queue + qid;
 
-			if(q->pid>=99) continue;  // if this is a manually started program, proceed
+			// flow rate limit check applies to ALL programs (including manually started ones).
+			// If the station name ends in a valid 5-char float (e.g. "Garden10.00" → 10.00 GPM),
+			// stop it and trigger a 24-hour rain delay when real-time flow exceeds that setpoint.
+			if(rt_gpm > 0.0f && os.is_running(sid)) {
+				char sname[STATION_NAME_SIZE];
+				os.get_station_name(sid, sname);
+				size_t namelen = strlen(sname);
+				if(namelen > 5) {
+					char *endptr;
+					float setpoint = strtod(sname + namelen - 5, &endptr);
+					if(endptr != sname + namelen - 5 && setpoint > 0.0f && rt_gpm > setpoint) {
+						q->deque_time = curr_time;
+						turn_off_station(sid, curr_time);  // also adds NOTIFY_FLOW_ALERT
+						// start 24h rain delay so no program restarts automatically;
+						// only extend if not already set to a longer value
+						if(!os.status.rain_delayed ||
+						   os.nvdata.rd_stop_time < curr_time + 24 * 3600UL) {
+							os.nvdata.rd_stop_time = curr_time + 24 * 3600UL;
+							os.raindelay_start();
+							notif.add(NOTIFY_RAINDELAY, LOGDATA_RAINDELAY, 1);
+						}
+					}
+				}
+			}
+
+			if(q->pid>=99) continue;  // skip weather/sensor checks for manually started programs
 			if(!en)	{q->deque_time=curr_time; turn_off_station(sid, curr_time);}  // if system is disabled, turn off zone
 			if(rd && !(igrd&(1<<s))) {q->deque_time=curr_time; turn_off_station(sid, curr_time);}  // if rain delay is on and zone does not ignore rain delay, turn it off
 			if(sn1&& !(igs &(1<<s))) {q->deque_time=curr_time; turn_off_station(sid, curr_time);}  // if sensor1 is on and zone does not ignore sensor1, turn it off
