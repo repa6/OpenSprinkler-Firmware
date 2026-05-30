@@ -75,7 +75,7 @@ jobs:
 
       - name: Create GitHub release
         id: create_release
-        uses: actions/create-release@v1
+        uses: softprops/action-gh-release@v1
         with:
           token: ${{ github.token }}
           tag_name: ${{ github.ref_name }}
