@@ -50,7 +50,7 @@ jobs:
         run: npm ci
 
       - name: Build PlatformIO Project
-        run: pio run --environment os3x_esp8266 --environment os4_esp32c5_n8 --environment os4_esp32c6_n8
+        run: pio run --environment os3x_esp8266 --environment os4_esp32c5_n4 --environment os4_esp32c5_n8 --environment os4_esp32c6_n8
 
       - name: Collect firmware artifacts
         run: |
