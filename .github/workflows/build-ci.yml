@@ -55,6 +55,8 @@ jobs:
       - name: Collect firmware artifacts
         run: |
           cp .pio/build/os3x_esp8266/firmware.bin ./firmware_os_esp8266.bin
+          cp .pio/build/os4_esp32c5_n4/firmware.bin ./firmware_os_esp32c5_n4.bin       
+          cp .pio/build/os4_esp32c5_n4/firmware.factory.bin ./factory_os_esp32c5_n4.bin
           cp .pio/build/os4_esp32c5_n8/firmware.bin ./firmware_os_esp32c5_n8.bin       
           cp .pio/build/os4_esp32c5_n8/firmware.factory.bin ./factory_os_esp32c5_n8.bin
           cp .pio/build/os4_esp32c6_n8/firmware.bin ./firmware_os_esp32c6_n8.bin
@@ -66,6 +68,8 @@ jobs:
           name: firmware
           path: |
             ./firmware_os_esp8266.bin
+            ./firmware_os_esp32c5_n4.bin
+            ./factory_os_esp32c5_n4.bin
             ./firmware_os_esp32c5_n8.bin
             ./factory_os_esp32c5_n8.bin
             ./firmware_os_esp32c6_n8.bin
